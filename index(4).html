@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>NEON NOIR: Mafia</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;800&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<style>
+:root{color-scheme:dark;--bg:#07060f;--fg:#e8e6ff;--pk:#ff2a8a;--cy:#19f0ff;--c:var(--cy);box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%;background:var(--bg);color:var(--fg);font-family:'Share Tech Mono',ui-monospace,monospace}
+body{background:radial-gradient(ellipse at 50% 0,#1b0d3a 0,transparent 60%),linear-gradient(#ffffff08 1px,transparent 1px) 0 0/100% 4px,var(--bg);min-height:100vh}
+#app{max-width:760px;margin:0 auto;padding:18px;text-align:center}
+h1,h2,.big{font-family:Orbitron,Impact,sans-serif;letter-spacing:.08em;margin:.3em 0}
+h1{font-size:clamp(28px,8vw,52px);color:var(--cy);text-shadow:2px 0 var(--pk),-2px 0 #fff3;animation:gl 3s infinite}
+.big{font-size:clamp(30px,9vw,64px);color:var(--c);text-shadow:0 0 18px var(--c),2px 0 var(--pk)}
+@keyframes gl{0%,92%,100%{transform:none}93%{transform:translate(3px,-1px) skew(4deg)}96%{transform:translate(-3px,1px)}}
+.card{border:1px solid var(--c);background:#0c0a1acc;box-shadow:0 0 18px #0008,inset 0 0 20px #ffffff06;padding:16px;margin:14px 0;border-radius:4px}
+input{font:inherit;background:#000;color:var(--fg);border:1px solid var(--cy);padding:12px;width:100%;border-radius:3px;margin:6px 0;text-align:center}
+button,.chip{font:inherit;cursor:pointer;background:#000a;color:var(--c);border:1px solid var(--c);padding:11px 16px;margin:5px;border-radius:3px;text-transform:uppercase;letter-spacing:.06em}
+button:hover:not(:disabled){background:var(--c);color:#000;box-shadow:0 0 14px var(--c)}
+button:disabled{opacity:.35;cursor:not-allowed}
+.chip{--c:#fff;border-color:var(--c);color:var(--c);min-width:110px}
+.chip.sel{background:var(--c);color:#000;box-shadow:0 0 16px var(--c)}
+.dot{display:inline-block;width:14px;height:14px;border-radius:50%;background:var(--c);box-shadow:0 0 8px var(--c);margin-right:6px;vertical-align:-2px}
+.code{font-family:Orbitron;font-size:40px;letter-spacing:.3em;color:var(--pk);text-shadow:0 0 14px var(--pk)}
+.tm{font-family:Orbitron;font-size:28px;color:var(--pk)}
+.ico{font-size:clamp(70px,20vw,130px);filter:drop-shadow(0 0 22px var(--c))}
+.dark{min-height:70vh;display:flex;flex-direction:column;justify-content:center;align-items:center}
+.moon{font-size:90px;animation:fl 4s infinite}
+@keyframes fl{50%{opacity:.6;transform:translateY(-6px)}}
+#chat{height:260px;overflow:auto;text-align:left;border:1px solid #fff3;padding:8px;background:#000a;margin:8px 0}
+#chat p{margin:4px 0}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.cell{aspect-ratio:1;border:1px solid var(--cy);background:#000;padding:0;margin:0}
+.cell.on{background:var(--pk);box-shadow:0 0 20px var(--pk)}
+.modal{position:fixed;inset:0;background:#000d;display:flex;align-items:center;justify-content:center;z-index:9}
+.modal>div{border:1px solid var(--cy);background:#0c0a1a;padding:24px;max-width:340px}
+.crown{font-size:90px;animation:fl 2s infinite}
+.small{opacity:.7;font-size:13px}
+.err{color:var(--pk)}
+.sw{width:34px;height:34px;padding:0;min-width:0;border-radius:50%;background:var(--c);border-color:#fff8}
+.sw.sel{outline:3px solid #fff}
+.hm{position:relative;z-index:1;padding-top:4vh}
+.bg{position:fixed;inset:0;z-index:0;overflow:hidden;pointer-events:none;background:linear-gradient(#0a0220 0,#2a0845 55%,#5c0a52 80%,#ff2a8a55 100%)}
+.sun{position:absolute;left:50%;bottom:22vh;width:min(60vw,380px);aspect-ratio:1;transform:translateX(-50%);border-radius:50%;background:linear-gradient(#ffe600,#ff2a8a 60%,#b44cff);box-shadow:0 0 80px #ff2a8a99;-webkit-mask:repeating-linear-gradient(#000 0 14px,transparent 14px 18px) bottom/100% 55% no-repeat,linear-gradient(#000,#000) top/100% 45% no-repeat;mask:repeating-linear-gradient(#000 0 14px,transparent 14px 18px) bottom/100% 55% no-repeat,linear-gradient(#000,#000) top/100% 45% no-repeat;opacity:.85}
+.city{position:absolute;left:0;right:0;bottom:20vh;height:30vh;background:linear-gradient(#07031a,#07031a) 2% 100%/7% 55% no-repeat,linear-gradient(#07031a,#07031a) 10% 100%/5% 80% no-repeat,linear-gradient(#07031a,#07031a) 17% 100%/8% 45% no-repeat,linear-gradient(#07031a,#07031a) 27% 100%/6% 95% no-repeat,linear-gradient(#07031a,#07031a) 36% 100%/9% 60% no-repeat,linear-gradient(#07031a,#07031a) 48% 100%/5% 75% no-repeat,linear-gradient(#07031a,#07031a) 57% 100%/8% 100% no-repeat,linear-gradient(#07031a,#07031a) 67% 100%/6% 50% no-repeat,linear-gradient(#07031a,#07031a) 76% 100%/9% 85% no-repeat,linear-gradient(#07031a,#07031a) 87% 100%/6% 65% no-repeat,linear-gradient(#07031a,#07031a) 95% 100%/7% 90% no-repeat;filter:drop-shadow(0 -2px 6px #19f0ff88)}
+.city::after{content:'';position:absolute;inset:0;background:repeating-linear-gradient(90deg,transparent 0 9px,#19f0ff33 9px 11px,transparent 11px 23px),repeating-linear-gradient(0deg,transparent 0 14px,#07031a 14px 18px);-webkit-mask:linear-gradient(#000,#000);opacity:.35;mix-blend-mode:screen;animation:win 5s steps(2) infinite}
+@keyframes win{50%{opacity:.15}}
+.floor{position:absolute;left:-60%;right:-60%;bottom:0;height:24vh;background:linear-gradient(#ff2a8acc 2px,transparent 2px) 0 0/100% 38px,linear-gradient(90deg,#19f0ffaa 2px,transparent 2px) 0 0/64px 100%,#10031f;transform:perspective(260px) rotateX(58deg);transform-origin:50% 100%;animation:fm 1s linear infinite}
+@keyframes fm{to{background-position:0 38px,0 0}}
+.rain{position:absolute;inset:-100px 0 0 0;background:repeating-linear-gradient(100deg,transparent 0 22px,#9fdcff44 22px 23px,transparent 23px 41px),repeating-linear-gradient(100deg,transparent 0 57px,#ff8ad844 57px 58px,transparent 58px 97px);background-size:100px 140px,170px 220px;animation:rn .5s linear infinite}
+@keyframes rn{to{background-position:-30px 140px,-50px 220px}}
+.logo{position:relative;font-family:Orbitron,Impact,sans-serif;font-weight:800;font-size:clamp(44px,13vw,100px);line-height:1;margin:0;color:#fff;letter-spacing:.06em;text-shadow:0 0 6px #fff,0 0 20px var(--cy),0 0 50px var(--cy);animation:flk 5s infinite}
+.logo b{color:var(--pk);text-shadow:0 0 6px #fff,0 0 20px var(--pk),0 0 50px var(--pk);font-weight:800}
+.logo::before,.logo::after{content:attr(data-t);position:absolute;left:0;right:0;top:0;overflow:hidden;opacity:.8;mix-blend-mode:screen}
+.logo::before{color:var(--pk);text-shadow:none;animation:g1 2.4s infinite steps(1)}
+.logo::after{color:var(--cy);text-shadow:none;animation:g2 3.1s infinite steps(1)}
+@keyframes g1{0%,90%,100%{clip-path:inset(0 0 100% 0);transform:none}92%{clip-path:inset(20% 0 55% 0);transform:translate(-7px,0)}96%{clip-path:inset(65% 0 10% 0);transform:translate(6px,0)}}
+@keyframes g2{0%,85%,100%{clip-path:inset(0 0 100% 0);transform:none}87%{clip-path:inset(45% 0 30% 0);transform:translate(7px,0)}93%{clip-path:inset(5% 0 80% 0);transform:translate(-5px,0)}}
+@keyframes flk{0%,19%,21%,60%,62%,100%{opacity:1}20%,61%{opacity:.55}}
+.sub{color:var(--pk);letter-spacing:.35em;font-size:13px;margin:10px 0 22px;text-shadow:0 0 10px var(--pk)}
+.sub i{font-style:normal;animation:bk 1s steps(1) infinite}
+@keyframes bk{50%{opacity:0}}
+.term{position:relative;max-width:420px;margin:0 auto;padding:22px 20px;background:#07031acc;backdrop-filter:blur(4px);border:1px solid #19f0ff55;box-shadow:0 0 40px #19f0ff22,inset 0 0 30px #ff2a8a11}
+.term::before,.term::after{content:'';position:absolute;width:22px;height:22px;border:2px solid var(--pk)}
+.term::before{top:-2px;left:-2px;border-right:0;border-bottom:0}
+.term::after{bottom:-2px;right:-2px;border-left:0;border-top:0}
+.term .lb{text-align:left;font-size:11px;letter-spacing:.3em;color:var(--cy);margin-top:6px}
+.term input{background:#000b;border:1px solid #19f0ff66;text-align:left;letter-spacing:.12em;box-shadow:inset 0 0 12px #19f0ff22}
+.term input:focus{outline:none;border-color:var(--pk);box-shadow:0 0 14px var(--pk)}
+.btn{width:100%;margin:10px 0 0;padding:14px;font-family:Orbitron;font-weight:800;letter-spacing:.2em;clip-path:polygon(12px 0,100% 0,100% calc(100% - 12px),calc(100% - 12px) 100%,0 100%,0 12px)}
+.btn.p{background:var(--pk);color:#000;border-color:var(--pk);box-shadow:0 0 22px #ff2a8a88}
+.btn.p:hover:not(:disabled){background:#fff;color:#000;box-shadow:0 0 30px #fff}
+.or{display:flex;align-items:center;gap:10px;color:#fff6;font-size:12px;margin:16px 0 4px}
+.or::before,.or::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,transparent,#19f0ff88,transparent)}
+.roles{display:flex;justify-content:center;gap:18px;margin-top:22px;font-size:26px;filter:drop-shadow(0 0 8px #fff6)}
+.roles span{animation:fl 3s infinite}
+.roles span:nth-child(2){animation-delay:.5s}.roles span:nth-child(3){animation-delay:1s}.roles span:nth-child(4){animation-delay:1.5s}
+/* ---- unified cyberpunk theme for every page ---- */
+#app{position:relative;z-index:1}
+body.in .bg{filter:brightness(.5) saturate(1.2)}
+body.in::after{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;background:radial-gradient(ellipse at 50% 25%,color-mix(in srgb,var(--c) 24%,transparent),transparent 70%),radial-gradient(ellipse at center,transparent 55%,#000b 100%)}
+body.demo #app{padding-bottom:80px}
+h2{font-size:clamp(20px,5.5vw,32px);color:#fff;text-shadow:0 0 8px var(--c),0 0 28px var(--c)}
+.hd{font-family:Orbitron,Impact,sans-serif;font-weight:800;font-size:clamp(32px,9vw,56px);letter-spacing:.2em;color:#fff;text-shadow:0 0 8px #fff,0 0 24px var(--cy),0 0 48px var(--cy);margin-top:10px}
+.code{display:inline-block;border:1px dashed var(--pk);padding:6px 6px 6px 22px;background:#07031acc;box-shadow:0 0 30px #ff2a8a44}
+.card{position:relative;background:#07031acc;backdrop-filter:blur(4px);border:1px solid #19f0ff44;box-shadow:0 0 30px #19f0ff18,inset 0 0 30px #ff2a8a0d;border-radius:0}
+.card::before,.card::after{content:'';position:absolute;width:16px;height:16px;border:2px solid var(--pk)}
+.card::before{top:-2px;left:-2px;border-right:0;border-bottom:0}
+.card::after{bottom:-2px;right:-2px;border-left:0;border-top:0}
+.row{padding:9px 12px;margin:6px 0;border-left:3px solid var(--cy);background:linear-gradient(90deg,#19f0ff18,transparent);text-align:left;font-size:17px}
+.chip{--c:#fff;background:#07031acc;padding:14px 18px;margin:6px;min-width:130px;font-size:15px;clip-path:polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px);box-shadow:inset 0 0 14px color-mix(in srgb,var(--c) 35%,transparent);transition:.15s}
+.chip:hover:not(.sel){transform:translateY(-3px);background:color-mix(in srgb,var(--c) 22%,#07031a)}
+button[data-act=start],button[data-act=again],button[data-act=say]{font-family:Orbitron;font-weight:800;letter-spacing:.2em;background:var(--pk);color:#000;border-color:var(--pk);box-shadow:0 0 22px #ff2a8a88;clip-path:polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px)}
+button[data-act=vote][data-u=skip]{display:block;margin:18px auto 0;border-style:dashed}
+.tm{display:inline-block;padding:4px 22px;border:1px solid var(--pk);background:#000a;box-shadow:0 0 18px #ff2a8a66,inset 0 0 12px #ff2a8a33;margin:8px 0}
+#chat{border:1px solid #19f0ff55;background:#05020fcc;box-shadow:inset 0 0 24px #19f0ff14}
+#chat p{padding:5px 8px;border-left:2px solid #ffffff22}
+.dark{position:relative}
+.dark>.ico,.dark>.crown{animation:fl 3s infinite}
+.dark .big{animation:flk 4s infinite}
+.moon{filter:drop-shadow(0 0 24px #8a7cff)}
+.cell{background:#05020fcc;border-color:#19f0ff66;box-shadow:inset 0 0 12px #19f0ff22;clip-path:polygon(8px 0,100% 0,100% calc(100% - 8px),calc(100% - 8px) 100%,0 100%,0 8px)}
+#db{position:fixed;left:0;right:0;bottom:0;z-index:30;display:flex;gap:6px;padding:8px 8px calc(8px + env(safe-area-inset-bottom,0px));background:#000e;border-top:1px solid var(--pk)}
+#db select{flex:1;min-width:0;font:inherit;background:#000;color:#fff;border:1px solid var(--cy);padding:8px}
+#db button{margin:0;padding:8px 14px}
+/* ---- motion ---- */
+#app>*{animation:scr .5s ease-out backwards}
+#app.quiet>*{animation:none}
+@keyframes scr{from{opacity:0;transform:translateY(14px) scale(.98);filter:blur(4px)}}
+@keyframes up{from{opacity:0;transform:translateY(16px)}}
+@keyframes pop{0%{transform:scale(0) rotate(-30deg);opacity:0}60%{transform:scale(1.25) rotate(6deg)}100%{transform:none;opacity:1}}
+@keyframes spread{from{letter-spacing:1.2em;opacity:0;filter:blur(8px)}}
+@keyframes stamp{0%{transform:scale(3) rotate(-8deg);opacity:0}70%{transform:scale(.92) rotate(-3deg);opacity:1}100%{transform:rotate(-3deg)}}
+@keyframes rise{from{transform:translateY(70px);opacity:0}}
+@keyframes shk{20%,60%{transform:translateX(-10px)}40%,80%{transform:translateX(10px)}}
+@keyframes drop{from{transform:translateY(-220px) rotate(-30deg);opacity:0}}
+@keyframes fade{to{opacity:0}}
+@keyframes fall{to{transform:translateY(110vh) rotate(720deg)}}
+@keyframes hot{50%{background:var(--pk);color:#000;transform:scale(1.12)}}
+@keyframes ping{50%{transform:scale(.92);box-shadow:0 0 36px var(--pk)}}
+.chip{animation:up .45s backwards}
+.chip:nth-child(2){animation-delay:.06s}.chip:nth-child(3){animation-delay:.12s}.chip:nth-child(4){animation-delay:.18s}.chip:nth-child(5){animation-delay:.24s}.chip:nth-child(6){animation-delay:.3s}.chip:nth-child(7){animation-delay:.36s}.chip:nth-child(8){animation-delay:.42s}
+.chip.sel{animation:ping .6s 1}
+.row{animation:up .4s backwards}
+.moon{animation:rise 1.6s ease-out backwards,fl 4s 1.6s infinite}
+.dark>.ico.pop{animation:pop .9s cubic-bezier(.2,1.4,.4,1) .3s backwards,fl 3s 1.3s infinite}
+.dark .big.spread{animation:spread 1.1s .6s backwards,flk 4s 1.7s infinite}
+.dark .big.stamp{transform:rotate(-3deg);animation:stamp .6s .4s backwards cubic-bezier(.2,.9,.3,1)}
+.dark>.ico.shk{animation:shk .7s,fl 3s .7s infinite}
+.dark>.crown{animation:drop .9s cubic-bezier(.3,1.5,.5,1) backwards,fl 2s .9s infinite}
+.shk{animation:shk .6s both}
+.flash{position:fixed;inset:0;background:#ff1f4b66;pointer-events:none;animation:fade 1.2s forwards!important}
+.tm.hot{animation:hot .5s infinite!important;color:#fff}
+.cell.on{animation:ping .5s infinite}
+.cf{position:fixed;top:-24px;z-index:50;pointer-events:none;border-radius:2px;animation:fall linear forwards}
+.modal{animation:fade .3s reverse}
+.modal>div{animation:pop .5s cubic-bezier(.2,1.4,.4,1)}
+.blink{animation:bk 1s steps(1) infinite}
+button:active:not(:disabled){transform:scale(.95)}
+.toast{position:fixed;left:50%;bottom:90px;transform:translateX(-50%);background:#000e;border:1px solid var(--pk);color:#fff;padding:10px 16px;z-index:60;animation:up .3s}
+@media(prefers-reduced-motion:reduce){*,::before,::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition:none!important}}
+#homebtn{position:fixed;top:calc(10px + env(safe-area-inset-top,0px));right:12px;z-index:20;width:46px;height:46px;display:flex;align-items:center;justify-content:center;font-family:Orbitron,Impact,sans-serif;font-weight:800;font-size:17px;letter-spacing:.02em;color:#fff;background:#07031acc;border:1px solid var(--cy);cursor:pointer;text-shadow:0 0 8px var(--cy);box-shadow:0 0 14px #19f0ff66,inset 0 0 10px #19f0ff22;clip-path:polygon(9px 0,100% 0,100% calc(100% - 9px),calc(100% - 9px) 100%,0 100%,0 9px);transition:.15s;padding:0;margin:0}
+#homebtn b{color:var(--pk);text-shadow:0 0 8px var(--pk)}
+#homebtn:hover{transform:scale(1.1);box-shadow:0 0 24px var(--cy)}
+body:not(.in) #homebtn{display:none}
+.kick{float:right;margin:-3px 0 0;padding:2px 11px;font-size:15px;color:#ff2a4d;border-color:#ff2a4d}
+.kick:hover:not(:disabled){background:#ff2a4d;color:#000;box-shadow:0 0 14px #ff2a4d}
+</style></head><body><div class="bg"><div class="sun"></div><div class="city"></div><div class="floor"></div><div class="rain"></div></div><div id="app"></div>
+<button id="homebtn" title="Home" aria-label="Home">N<b>N</b></button>
+<script>
+/* ===== STEP 1: PASTE YOUR FIREBASE CONFIG HERE (see README) ===== */
+const FIREBASE_CONFIG={apiKey:"AIzaSyDdGkKxi74T55Q5Tl4x8T2vD8tuaS9sor4",authDomain:"mafia-33c07.firebaseapp.com",projectId:"mafia-33c07",storageBucket:"mafia-33c07.firebasestorage.app",messagingSenderId:"957801663114",appId:"1:957801663114:web:19f1e448132d26be28fb73"};
+function setupScreen(){
+  document.body.classList.add('in');
+  app.innerHTML=`<div class="hd">SETUP</div><div class="sub">// ONE-TIME BACKEND SETUP //</div><div class="card" style="text-align:left;line-height:1.7">
+  <p>1. Go to <b>console.firebase.google.com</b> → create a project.</p>
+  <p>2. Build → <b>Firestore Database</b> → Create database → <b>test mode</b>.</p>
+  <p>3. Project settings → Your apps → <b>Web (&lt;/&gt;)</b> → copy the config.</p>
+  <p>4. Paste it into <b>FIREBASE_CONFIG</b> at the top of this file's script, then re-upload.</p></div>
+  <p class="small">Tip: add #demo to the link to preview every screen without a backend.</p>`;
+}
+const COL=[['Red','#ff2a4d','w'],['Blue','#2a6bff','c'],['Green','#22ff88','c'],['Yellow','#ffe600','w'],['Purple','#b44cff','c'],['Orange','#ff8a1f','w'],['Cyan','#19f0ff','c'],['Pink','#ff4fd8','w']];
+const ROLE={mafia:{n:'MAFIA',i:'🔪',c:'#ff1f4b',t:'Each night, choose one victim. Stay hidden. Survive until only one remains beside you.'},
+detective:{n:'DETECTIVE',i:'🕵️',c:'#19f0ff',t:'Each night, scan one player and expose their true role.'},
+doctor:{n:'DOCTOR',i:'💉',c:'#22ff88',t:'Each night, shield one player. You can never shield the same person twice.'},
+crew:{n:'CREW',i:'🛡️',c:'#ffb020',t:'Find the Mafia. Trust no one. Vote wisely.'}};
+const $=s=>document.querySelector(s),app=$('#app');
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+let db,uid,code,S=null,P={},A={},C=[],M={},K='',endAt=0,sel=null,G=null,T=null,miniT=null,myName='';
+const hex=u=>(COL.find(c=>c[0]===P[u]?.color)||[0,'#888'])[1];
+const nm=u=>esc(P[u]?.name||'???');
+const chip=(u,x='')=>`<button class="chip ${x}" data-act="pick" data-u="${u}" style="--c:${hex(u)}"><span class="dot"></span>${nm(u)}</button>`;
+const tag=u=>`<span style="color:${hex(u)}"><span class="dot" style="--c:${hex(u)}"></span>${nm(u)}</span>`;
+const isHost=()=>S&&S.host===uid;
+const mine=()=>S?.roles?.[uid];
+const alive=u=>S.alive?.includes(u);
+const L=()=>db.doc('lobbies/'+code);
+const act=(t)=>db.doc(`lobbies/${code}/a/${uid}`).set({g:S.gid,r:S.round,ph:S.phase,t});
+
+/* ---------- boot ---------- */
+(async()=>{
+  if(location.hash==='#demo'){demo();return}
+  if(!window.firebase||FIREBASE_CONFIG.apiKey.startsWith('PASTE')){setupScreen();return}
+  try{firebase.initializeApp(FIREBASE_CONFIG);db=firebase.firestore()}catch(e){app.innerHTML='<h1>NEON NOIR</h1><p class="err">Firebase failed to start: '+esc(e.message)+'</p>';return}
+  try{uid=localStorage.getItem('nn_uid')}catch(_){}
+  if(!uid){uid='u'+Math.random().toString(36).slice(2,10)+Date.now().toString(36);try{localStorage.setItem('nn_uid',uid)}catch(_){}}
+  try{myName=localStorage.getItem('nn_name')||''}catch(_){}
+  home();
+  setInterval(tick,250);
+})();
+
+function home(msg=''){
+  document.body.classList.remove('in');
+  app.innerHTML=`<div class="hm"><div class="logo" data-t="NEON NOIR">NEON <b>NOIR</b></div>
+  <div class="sub">// ONE OF YOU IS A KILLER<i>_</i> //</div>
+  <div class="term"><div class="lb">&gt; IDENTIFY YOURSELF</div>
+  <input id="nm" maxlength="14" placeholder="CODENAME" autocomplete="off" value="${esc(myName)}">
+  <button class="btn p" data-act="create">Create Lobby</button>
+  <div class="or">OR ENTER A LOBBY</div>
+  <input id="cd" maxlength="5" placeholder="– – – – –" autocomplete="off" style="text-transform:uppercase;text-align:center;letter-spacing:.5em">
+  <button class="btn" data-act="join">Join Lobby</button>
+  <p class="err" style="min-height:1em">${esc(msg)}</p></div>
+  <div class="roles"><span>🔪</span><span>🕵️</span><span>💉</span><span>🛡️</span></div>
+  <p class="small">4–8 PLAYERS · 1 MAFIA · 1 DETECTIVE · 1 DOCTOR · THE REST CREW</p></div>`;
+}
+
+async function enter(c,create){
+  code=c;
+  const pr=db.doc(`lobbies/${c}/p/${uid}`),ex=await pr.get();if(!ex.exists)await pr.set({name:myName,color:null,ts:Date.now()});
+  L().onSnapshot(s=>{if(!s.exists)return;const d=s.data();
+    if(!S||d.seq!==S.seq||d.phase!==S.phase){endAt=Date.now()+(d.dur||0)*1000}
+    S=d;if(isHost()&&!G&&!['lobby','end'].includes(d.phase)){G={...d,m:null,d:null};T=setTimeout(adv,5000)}draw()});
+  const sub=(p,fn)=>db.collection(`lobbies/${c}/${p}`).onSnapshot(q=>{fn(q.docs.map(d=>({id:d.id,...d.data()})));draw();hostCheck()});
+  sub('p',a=>{P={};a.forEach(x=>P[x.id]=x);
+  if(P[uid])window._joined=true;
+  else if(window._joined&&S&&S.phase==='lobby'){window._joined=false;alert('The host removed you from the lobby.');location.reload()}
+});
+  sub('a',a=>{A={};a.forEach(x=>A[x.id]=x)});
+  sub('m',a=>{M={};a.forEach(x=>M[x.id]=x)});
+  sub('c',a=>{const tv=x=>x.ts&&x.ts.toMillis?x.ts.toMillis():(x.ts??Infinity);C=a.sort((x,y)=>tv(x)-tv(y)||(x.id<y.id?-1:1))});
+}
+
+/* ---------- clicks ---------- */
+app.addEventListener('click',async e=>{
+  const b=e.target.closest('[data-act]');if(!b)return;
+  const a=b.dataset.act,u=b.dataset.u;
+  if(a==='create'||a==='join'){
+    myName=$('#nm').value.trim();if(!myName)return home('Pick a codename first.');try{localStorage.setItem('nn_name',myName)}catch(_){}
+    if(a==='create'){const A8='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';let c='';for(let i=0;i<5;i++)c+=A8[Math.random()*A8.length|0];
+      await db.doc('lobbies/'+c).set({host:uid,phase:'lobby',seq:0,dur:0,gid:0,created:Date.now()});return enter(c)}
+    const c=$('#cd').value.trim().toUpperCase();if(!c)return home('Enter a lobby code.');
+    const s=await db.doc('lobbies/'+c).get();
+    if(!s.exists)return home('No lobby with that code.');
+    const was=await db.doc(`lobbies/${c}/p/${uid}`).get();
+    if(!was.exists){
+      if(s.data().phase!=='lobby')return home('That game already started.');
+      const n=(await db.collection(`lobbies/${c}/p`).get()).docs.length;
+      if(n>=8)return home('Lobby is full (8 max).');
+    }
+    return enter(c);
+  }
+  if(a==='color'){if(Object.values(P).some(p=>p.color===u&&p!==P[uid]))return;db.doc(`lobbies/${code}/p/${uid}`).update({color:u})}
+  if(a==='start')start();
+  if(a==='kick'&&isHost()&&S.phase==='lobby'&&confirm('Remove '+(P[u]?.name||'this player')+' from the lobby?'))db.doc(`lobbies/${code}/p/${u}`).delete();
+  if(a==='copy'){try{await navigator.clipboard.writeText(code);$('#cp').textContent='COPIED ✔'}catch(_){$('#cp').textContent='COPY BLOCKED: SHARE IT MANUALLY'}}
+  if(a==='again'){G=null;L().update({phase:'lobby',seq:S.seq+1,dur:0,roles:{},winner:null})}
+  if(a==='pick'){
+    const p=S.phase;
+    if(sel)return;
+    if(['mafia','doctor','detective'].includes(p)&&mine()===p&&alive(uid)){
+      sel=u;act(u);
+      if(p==='detective')document.body.insertAdjacentHTML('beforeend',`<div class="modal"><div><h2 style="color:var(--cy)">SCAN COMPLETE</h2>${tag(u)}<p>is</p><div class="big" style="--c:${ROLE[S.roles[u]].c}">${ROLE[S.roles[u]].n}</div><button onclick="this.closest('.modal').remove()">Close</button></div></div>`);
+      document.querySelectorAll('.chip').forEach(x=>x.classList.toggle('sel',x.dataset.u===u));$('#lk').textContent=p==='detective'?'SCAN LOGGED. THE CITY WAKES SOON…':'CHOICE LOCKED IN.'
+    }
+  }
+  if(a==='vote'){sel=u;act(u);document.querySelectorAll('[data-act=vote],[data-act=pick]').forEach(x=>x.classList.toggle('sel',x.dataset.u===u));sel=null}
+  if(a==='say'){const i=$('#msg'),t=i.value.trim();if(!t||!alive(uid))return;i.value='';db.collection(`lobbies/${code}/c`).add({g:S.gid,r:S.round,u:uid,text:t.slice(0,200),ts:firebase.firestore.FieldValue.serverTimestamp()})}
+});
+app.addEventListener('keydown',e=>{if(e.key!=='Enter')return;const q=s=>document.querySelector(s);if(e.target.id==='msg')q('[data-act=say]').click();if(e.target.id==='nm')q('[data-act=create]').click();if(e.target.id==='cd')q('[data-act=join]').click()});
+window.addEventListener('unhandledrejection',e=>toast('Connection hiccup, try again.'));
+function toast(t){const e=document.createElement('div');e.className='toast';e.textContent=t;document.body.append(e);setTimeout(()=>e.remove(),3500)}
+
+/* ---------- drawing ---------- */
+function tick(){
+  const el=$('#tm');if(el){const s=Math.max(0,Math.ceil((endAt-Date.now())/1000));el.textContent=s+'s';el.classList.toggle('hot',s<=5&&s>0)}
+}
+function draw(){
+  if(!S)return;
+  const k=S.phase+S.seq+(S.phase==='lobby'?Object.values(P).map(p=>p.id+p.color+p.name).join():'')+(S.phase==='end'?S.winner:'');
+  if(k!==K){app.classList.toggle('quiet',S.phase==='lobby'&&K.startsWith('lobby'));K=k;sel=null;clearInterval(miniT);document.querySelector('.modal')?.remove();build()}
+  live();
+}
+function live(){
+  const vc=$('#vc');if(vc)vc.textContent=S.alive.filter(u=>A[u]&&A[u].g===S.gid&&A[u].r===S.round&&A[u].ph==='meeting').length+'/'+S.alive.length+' VOTES CAST';
+  const ch=$('#chat');
+  if(ch){const st=ch.scrollTop;ch.innerHTML=C.filter(c=>c.g===S.gid&&c.r===S.round).map(c=>`<p>${tag(c.u)}: ${esc(c.text)}</p>`).join('')||'<p class="small">Silence…</p>';ch.scrollTop=ch.scrollHeight}
+}
+function waitScreen(txt){return `<div class="dark"><div class="moon">🌙</div><div class="big" style="--c:#8a7cff">${txt}</div><div class="tm" id="tm"></div><p class="small">${alive(uid)?'Stay silent. Do not move.':'You are a ghost. Watch in silence.'}</p></div>`}
+function grid(list,cls=''){return `<div>${list.map(u=>chip(u,cls)).join('')}</div>`}
+
+function build(){
+  const p=S.phase,me=mine(),R=ROLE[me]||ROLE.crew;
+  document.body.classList.add('in');
+  document.body.style.setProperty('--c','#19f0ff');
+  if(p==='lobby'){
+    const ids=Object.keys(P),taken=new Set(ids.filter(i=>i!==uid).map(i=>P[i].color));
+    const ok=ids.length>=4&&ids.every(i=>P[i].color);
+    app.innerHTML=`<div class="hd">SAFEHOUSE</div><div class="sub">// CHANNEL OPEN · SHARE THE CODE //</div><div class="code" data-act="copy" title="Tap to copy" style="cursor:pointer">${code}</div><div class="small" id="cp">TAP CODE TO COPY</div>
+    <div class="card"><div>${ids.length}/8 OPERATIVES</div>${ids.map(i=>`<div class="row">${tag(i)} ${i===S.host?'👑':''} ${P[i].color?'':'<span class="small">(choosing colour…)</span>'}${isHost()&&i!==uid?`<button class="kick" data-act="kick" data-u="${i}" title="Remove player">✕</button>`:''}</div>`).join('')}</div>
+    <div class="card"><div>CHOOSE YOUR COLOUR</div>${COL.map(c=>`<button class="sw ${P[uid]?.color===c[0]?'sel':''}" title="${c[0]}" data-act="color" data-u="${c[0]}" style="--c:${c[1]}" ${taken.has(c[0])?'disabled':''}></button>`).join('')}</div>
+    ${isHost()?`<button data-act="start" ${ok?'':'disabled'}>Start Game</button><p class="small">Needs 4–8 players, each with a unique colour.</p>`:'<p class="small">Waiting for the host to start…</p>'}`;
+  }
+  else if(p==='roles'){
+    document.body.style.setProperty('--c',R.c);
+    app.innerHTML=`<div class="dark"><p class="small blink">// DECRYPTING IDENTITY… //</p><div class="ico pop">${R.i}</div><div class="big spread">${R.n}</div><p>${R.t}</p><div class="tm" id="tm"></div></div>`;
+  }
+  else if(p==='night')app.innerHTML=waitScreen('THE NIGHT HAS FALLEN');
+  else if(['mafia','doctor','detective'].includes(p)){
+    if(me===p&&alive(uid)){
+      document.body.style.setProperty('--c',R.c);
+      let l=S.alive.filter(u=>p==='doctor'?!S.saved.includes(u):u!==uid);
+      app.innerHTML=`<div class="tm" id="tm"></div><h2 style="color:var(--c)">${{mafia:'CHOOSE YOUR VICTIM',doctor:'CHOOSE WHO TO SAVE',detective:'CHOOSE WHO TO SCAN'}[p]}</h2>${grid(l)}<p id="lk" class="small">${p==='doctor'&&S.saved.length?'You cannot save someone you already chose.':''}</p>`;
+    }else app.innerHTML=waitScreen({mafia:'THE MAFIA STALKS…',doctor:'THE DOCTOR WORKS…',detective:'THE DETECTIVE SCANS…'}[p]);
+  }
+  else if(p==='dawn'){
+    const d=S.dawn||{k:'quiet'};
+    app.innerHTML=`<div class="dark"><div class="moon">🌅</div><div class="big" style="--c:#ffb020">THE SUN HAS RISEN</div>`+
+    (d.k==='slain'?`<div class="flash"></div><h2 class="shk">${tag(d.u)}</h2><p style="color:var(--pk);font-size:20px">Has been slain by the Mafia</p>`:
+     d.k==='saved'?`<h2>${tag(d.u)}</h2><p style="color:#22ff88;font-size:20px">Was Targeted by the Mafia, but was Saved By the Doctor</p>`:
+     `<p>The night passed quietly. Nobody was harmed.</p>`)+`</div>`;
+  }
+  else if(p==='meeting'){
+    app.innerHTML=`<h2>EMERGENCY MEETING</h2><div class="tm" id="tm"></div><div class="small">ALIVE: ${S.alive.map(tag).join(' · ')}</div>
+    <div id="chat" style="height:190px"></div>${alive(uid)?`<div style="display:flex;gap:6px"><input id="msg" maxlength="200" placeholder="Speak…" autocomplete="off"><button data-act="say">Send</button></div>
+    <h2 style="margin-top:18px">CAST YOUR VOTE</h2><div id="vc" class="small"></div>${grid(S.alive.filter(u=>u!==uid)).replace(/data-act="pick"/g,'data-act="vote"')}<button data-act="vote" data-u="skip" style="--c:#aaa">Abstain</button><p class="small">You can change your vote until time runs out.</p>`:'<p class="small">Ghosts cannot speak or vote.</p>'}`;
+  }
+  else if(p==='vote'){
+    app.innerHTML=`<h2>CAST YOUR VOTE</h2><div class="tm" id="tm"></div>${alive(uid)?grid(S.alive.filter(u=>u!==uid).map(u=>u)).replace(/data-act="pick"/g,'data-act="vote"')+`<button data-act="vote" data-u="skip" style="--c:#aaa">Abstain</button>`:'<p class="small">Ghosts cannot vote.</p>'}`;
+  }
+  else if(p==='reveal'){
+    const r=S.rev;
+    app.innerHTML=`<div class="dark">`+(r&&r.u?`<h2>${tag(r.u)}</h2><p>has been eliminated. They were…</p><div class="big stamp" style="--c:${ROLE[r.role].c}">${ROLE[r.role].n} ${ROLE[r.role].i}</div>`:`<div class="big">NO ONE FALLS</div><p>The vote was tied or abstained. Nobody was eliminated.</p>`)+`</div>`;
+  }
+  else if(p==='mini'){
+    if(alive(uid)&&me!=='mafia'){
+      app.innerHTML=`<h2>FIREWALL BREACH</h2><div class="tm" id="tm"></div><p>Hit the glowing node <b id="cnt">0/8</b>. Misses cost a point. Everyone must clear it to decrypt a clue on the Mafia.</p><div class="grid" id="gr">${'<button class="cell"></button>'.repeat(12)}</div><p id="mr"></p>`;
+      if(S.round===3)mini();else rocket();
+    }else app.innerHTML=waitScreen(me==='mafia'?'THE CREW IS HACKING…':'THE CREW IS HACKING…');
+  }
+  else if(p==='clue'){
+    app.innerHTML=`<div class="dark"><div class="ico">📡</div><h2>INTEL REPORT</h2><p style="font-size:20px;max-width:480px">${me==='mafia'?'The crew is closing in…':esc(S.clue)}</p></div>`;
+  }
+  else if(p==='end'){
+    const mafiaWon=S.winner==='mafia',iAmMafia=me==='mafia',win=mafiaWon===iAmMafia;
+    document.body.style.setProperty('--c',win?'#ffd000':'#ff2a4d');
+    const msgs=win?(iAmMafia?['Cold, clever, untouchable. The city is yours.','Not a single clue could catch you.']:['Teamwork cracked the case. The shadows are no match for you.','Sharp minds and trust brought the Mafia down.'])
+      :(iAmMafia?['The crew was too sharp this time. Sharpen your lies and strike again.','Every great villain loses once. Come back darker.']:['The Mafia slipped through your fingers. Regroup and try again!','Stay united, watch closer. Next time, you’ll catch them.']);
+    app.innerHTML=`<div class="dark">${win?'<div class="crown">👑</div>':'<div class="ico shk">💀</div>'}<div class="big">${win?'VICTORY':'DEFEAT'}</div>
+    <p>${mafiaWon?'The Mafia survived the night.':'The Mafia has been caught!'}</p><p style="max-width:460px">${msgs[Math.random()*2|0]}</p>
+    <div class="card small">THE MAFIA WAS ${tag(Object.keys(S.roles).find(u=>S.roles[u]==='mafia'))}</div>
+    ${isHost()?'<button data-act="again">Play Again</button>':'<p class="small">Waiting for host to restart…</p>'}</div>`;
+    if(win)confetti();
+  }
+}
+
+function mini(){
+  let hits=0,cur=-1;const cells=[...document.querySelectorAll('.cell')];
+  const nx=()=>{let n;do{n=Math.random()*12|0}while(n===cur);cur=n;cells.forEach((c,i)=>c.classList.toggle('on',i===cur));$('#cnt').textContent=hits+'/8'};
+  cells.forEach((c,i)=>c.onclick=()=>{
+    if(hits>=8)return;
+    if(i===cur)hits++;else hits=Math.max(0,hits-1);
+    if(hits>=8){clearInterval(miniT);cells.forEach(x=>x.classList.remove('on'));$('#cnt').textContent='8/8';$('#mr').textContent='BREACH COMPLETE ✔ Waiting for the others…';db.doc(`lobbies/${code}/m/${uid}`).set({g:S.gid,r:S.round,ok:1})}
+    else nx();
+  });
+  nx();miniT=setInterval(()=>hits<8&&nx(),1800);
+}
+
+function rocket(){
+  app.innerHTML=`<h2>ROCKET DEFENSE</h2><div class="tm" id="tm"></div><p>Drag or use the arrow keys / A and D to move. Your rocket fires automatically. Destroy <b id="cnt">0/12</b> drones. 3 hits and you reboot!</p><canvas id="cv" width="360" height="480" style="width:100%;max-width:360px;touch-action:none;border:1px solid var(--cy);background:#05020fcc;box-shadow:0 0 24px #19f0ff44"></canvas><p id="mr"></p>`;
+  const cv=$('#cv'),x=cv.getContext('2d'),W=360,H=480,keys={};
+  let ship=W/2,bul=[],en=[],kills=0,lives=3,t=0,done=false,msg=0;
+  const stars=Array.from({length:35},()=>[Math.random()*W,Math.random()*H,Math.random()*2+.5]);
+  const move=e=>{const r=cv.getBoundingClientRect();ship=Math.max(18,Math.min(W-18,(e.clientX-r.left)/r.width*W))};
+  cv.addEventListener('pointermove',move);cv.addEventListener('pointerdown',move);
+  const kd=e=>{if(!cv.isConnected){document.removeEventListener('keydown',kd);document.removeEventListener('keyup',ku);return}keys[e.key.toLowerCase()]=1;if(e.key.startsWith('Arrow'))e.preventDefault()};
+  const ku=e=>{keys[e.key.toLowerCase()]=0};
+  document.addEventListener('keydown',kd);document.addEventListener('keyup',ku);
+  miniT=setInterval(()=>{
+    if(done)return;t++;
+    if(keys.arrowleft||keys.a)ship-=5;if(keys.arrowright||keys.d)ship+=5;
+    ship=Math.max(18,Math.min(W-18,ship));
+    if(t%12===0)bul.push([ship,H-50]);
+    if(t%28===0)en.push([20+Math.random()*(W-40),-20,1.2+Math.random()*.7]);
+    bul.forEach(b=>b[1]-=8);en.forEach(e=>e[2]&&(e[1]+=e[2]));
+    bul=bul.filter(b=>{for(const e of en){if(!e.dead&&Math.abs(b[0]-e[0])<18&&Math.abs(b[1]-e[1])<18){e.dead=1;return false}}return b[1]>-10});
+    kills+=en.filter(e=>e.dead).length;en=en.filter(e=>!e.dead);
+    en=en.filter(e=>{if(e[1]>H-20||(Math.abs(e[0]-ship)<20&&e[1]>H-70)){lives--;return false}return true});
+    if(lives<=0){kills=0;lives=3;en=[];bul=[];msg=40}
+    if(kills>=12){done=true;clearInterval(miniT);$('#mr').textContent='ALL DRONES DESTROYED \u2714 Waiting for the others\u2026';db.doc(`lobbies/${code}/m/${uid}`).set({g:S.gid,r:S.round,ok:1})}
+    x.clearRect(0,0,W,H);x.fillStyle='#fff';
+    stars.forEach(s=>{s[1]=(s[1]+s[2])%H;x.globalAlpha=.6;x.fillRect(s[0],s[1],s[2],s[2])});x.globalAlpha=1;
+    x.fillStyle='#ff2a8a';bul.forEach(b=>x.fillRect(b[0]-2,b[1],4,12));
+    x.font='28px serif';en.forEach(e=>x.fillText('\ud83d\udc7e',e[0]-14,e[1]+10));
+    if(!done)x.fillText('\ud83d\ude80',ship-14,H-20);
+    if(msg>0){msg--;x.fillStyle='#ff2a4d';x.font='20px Orbitron,sans-serif';x.fillText('SHIP DOWN \u2013 REBOOTING',60,H/2)}
+    $('#cnt').textContent=kills+'/12 '+'\u2764'.repeat(Math.max(lives,0));
+  },33);
+}
+/* ---------- host engine (the host's browser runs the game) ---------- */
+const who=r=>Object.keys(G.roles).find(u=>G.roles[u]===r);
+function go(phase,dur,x={}){clearTimeout(T);G.phase=phase;G.seq=(G.seq??S.seq??0)+1;Object.assign(G,x);L().update({phase,dur,seq:G.seq,...x});T=setTimeout(adv,dur*1000)}
+function start(){
+  const ids=Object.keys(P);
+  const rs=['mafia','detective','doctor',...Array(ids.length-3).fill('crew')];
+  for(let i=rs.length-1;i>0;i--){const j=Math.random()*(i+1)|0;[rs[i],rs[j]]=[rs[j],rs[i]]}
+  const roles={};ids.forEach((u,i)=>roles[u]=rs[i]);
+  G={...S,roles,alive:ids,saved:[],round:1,n:ids.length,gid:Date.now(),m:null,d:null};
+  S.seq=S.seq||0;
+  go('roles',8,{roles,alive:ids,saved:[],round:1,n:ids.length,gid:G.gid,dawn:null,rev:null,clue:null,winner:null});
+}
+function pick(r){const u=who(r),a=A[u];
+  if(!a||a.g!==G.gid||a.r!==G.round||a.ph!==r||!G.alive.includes(a.t))return null;
+  if(r==='doctor'&&G.saved.includes(a.t))return null;
+  if(r!=='doctor'&&a.t===u)return null;return a.t}
+function night(ph){go(ph,G.alive.includes(who(ph))?20:8)}
+function over(){
+  let w=null;if(!G.alive.includes(who('mafia')))w='crew';else if(G.alive.length<=2)w='mafia';
+  if(w){go('end',3600,{winner:w});return true}return false}
+function next(){G.round++;if(G.round>G.n)return go('end',3600,{winner:'mafia'});G.m=G.d=null;go('night',4,{round:G.round})}
+function adv(){
+  if(!isHost()||!G)return;clearTimeout(T);clearTimeout(G.dt);G.dt=null;const p=G.phase;
+  if(p==='roles')return go('night',4);
+  if(p==='night')return night('mafia');
+  if(p==='mafia'){G.m=pick('mafia');return night('doctor')}
+  if(p==='doctor'){G.d=pick('doctor');if(G.d)G.saved.push(G.d);return night('detective')}
+  if(p==='detective'){
+    let dawn={k:'quiet'};
+    if(G.m){if(G.m===G.d)dawn={k:'saved',u:G.m};else{G.alive=G.alive.filter(x=>x!==G.m);dawn={k:'slain',u:G.m}}}
+    return go('dawn',7,{dawn,alive:G.alive,saved:G.saved})}
+  if(p==='dawn'){if(over())return;return go('meeting',90)}
+  if(p==='meeting'){
+    const cnt={};G.alive.forEach(u=>{const a=A[u];if(a&&a.g===G.gid&&a.r===G.round&&a.ph==='meeting'&&a.t&&a.t!=='skip'&&G.alive.includes(a.t))cnt[a.t]=(cnt[a.t]||0)+1});
+    const e=Object.entries(cnt).sort((a,b)=>b[1]-a[1]);let rev={none:1};
+    if(e.length&&(e.length===1||e[0][1]>e[1][1])){const u=e[0][0];G.alive=G.alive.filter(x=>x!==u);rev={u,role:G.roles[u]}}
+    return go('reveal',7,{rev,alive:G.alive})}
+  if(p==='reveal'){if(over())return;return(G.round===3||G.round===6)?go('mini',60):next()}
+  if(p==='mini'){
+    const mc=COL.find(c=>c[0]===P[who('mafia')].color);
+    const all=miniDone();
+    const clue=all?(G.round===3?`Intel decrypted: the Mafia’s colour is a ${mc[2]==='w'?'WARM':'COOL'} tone.`:`Intel decrypted: the Mafia’s colour name starts with a letter from ${mc[0][0]<='M'?'A to M':'N to Z'}.`):'The firewall held. Not everyone cleared the breach, so no intel was recovered.';
+    return go('clue',7,{clue})}
+  if(p==='clue')return next();
+}
+const miniDone=()=>G.alive.filter(u=>u!==who('mafia')).every(u=>M[u]&&M[u].g===G.gid&&M[u].r===G.round);
+function hostCheck(){
+  if(!isHost()||!G)return;const p=G.phase;
+  if(['mafia','doctor'].includes(p)&&G.alive.includes(who(p))&&pick(p))adv();
+  else if(p==='detective'&&G.alive.includes(who(p))&&pick(p)){if(!G.dt)G.dt=setTimeout(()=>{if(G&&G.phase==='detective')adv()},7000)}
+  else if(p==='meeting'&&G.alive.every(u=>A[u]&&A[u].g===G.gid&&A[u].r===G.round&&A[u].ph==='meeting'))adv();
+  else if(p==='mini'&&miniDone())adv();
+}
+
+function confetti(){const cs=['#ff2a8a','#19f0ff','#ffe600','#22ff88','#b44cff'];for(let i=0;i<60;i++){const e=document.createElement('i');e.className='cf';e.style.cssText=`left:${Math.random()*100}vw;background:${cs[i%5]};animation-duration:${2.5+Math.random()*2.5}s;animation-delay:${Math.random()*1.2}s;width:${6+Math.random()*6}px;height:${10+Math.random()*10}px`;document.body.append(e);setTimeout(()=>e.remove(),6500)}}
+/* ---------- preview mode: open this page with #demo on the end of the link ---------- */
+function demo(){
+  document.body.classList.add('demo');
+  db={doc:()=>({set:async()=>{},update:async()=>{},get:async()=>({exists:false})}),collection:()=>({add:async()=>{}})};
+  code='K7X9Q';
+  const names=['Ghost','Viper','Nyx','Raze','Echo','Zero','Jinx','Kira'];
+  COL.forEach((c,i)=>P['u'+(i+1)]={id:'u'+(i+1),name:names[i],color:c[0]});
+  const roles={u1:'detective',u2:'mafia',u3:'doctor',u4:'crew',u5:'crew',u6:'crew',u7:'crew',u8:'crew'};
+  const base={host:'u1',gid:1,round:3,n:8,alive:['u1','u2','u3','u4','u5','u6'],saved:['u3'],roles,dur:600,dawn:{k:'saved',u:'u3'},rev:{u:'u2',role:'mafia'}};
+  C=[{g:1,r:3,u:'u4',text:'Where were you last night, Viper?',ts:1},{g:1,r:3,u:'u2',text:'Asleep. Why so loud, Raze?',ts:2},{g:1,r:3,u:'u3',text:'Something feels off about Viper…',ts:3}];
+  const it=[['Home',0,'u1'],['Lobby',{phase:'lobby'},'u1'],['Role: Mafia',{phase:'roles'},'u2'],['Role: Detective',{phase:'roles'},'u1'],['Role: Doctor',{phase:'roles'},'u3'],['Role: Crew',{phase:'roles'},'u4'],['Night falls',{phase:'night'},'u4'],['Mafia picks',{phase:'mafia'},'u2'],['Doctor picks',{phase:'doctor'},'u3'],['Detective scans',{phase:'detective'},'u1'],['Night (waiting)',{phase:'mafia'},'u4'],['Dawn: slain',{phase:'dawn',dawn:{k:'slain',u:'u5'}},'u4'],['Dawn: saved',{phase:'dawn'},'u4'],['Meeting',{phase:'meeting'},'u4'],['Vote',{phase:'vote'},'u4'],['Reveal',{phase:'reveal'},'u4'],['Mini-game',{phase:'mini'},'u4'],['Clue',{phase:'clue',clue:'Intel decrypted: the Mafia’s colour is a COOL tone.'},'u4'],['Crew victory (crew view)',{phase:'end',winner:'crew'},'u4'],['Crew victory (mafia view)',{phase:'end',winner:'crew'},'u2'],['Mafia victory (mafia view)',{phase:'end',winner:'mafia'},'u2'],['Mafia victory (crew view)',{phase:'end',winner:'mafia'},'u4']];
+  const bar=document.createElement('div');bar.id='db';
+  bar.innerHTML='<button id="pv">◀</button><select id="sl">'+it.map((x,i)=>`<option value="${i}">${x[0]}</option>`).join('')+'</select><button id="nx">▶</button>';
+  document.body.append(bar);
+  let n=1,cur=0;
+  const show=i=>{cur=(i+it.length)%it.length;const x=it[cur];sel=null;clearInterval(miniT);document.querySelector('.modal')?.remove();$('#sl').value=cur;uid=x[2];
+    if(!x[1]){S=null;K='';return home()}
+    S={...base,...x[1],seq:++n};K='';endAt=Date.now()+60000;build();live()};
+  $('#sl').onchange=e=>show(+e.target.value);$('#pv').onclick=()=>show(cur-1);$('#nx').onclick=()=>show(cur+1);
+  setInterval(tick,250);show(0);
+}
+document.getElementById('homebtn').onclick=()=>{
+  const inGame=S&&!['lobby','end'].includes(S.phase);
+  if(inGame&&!confirm('Leave the game and return home? You can rejoin with the lobby code.'))return;
+  location.reload();
+};
+</script></body></html>
